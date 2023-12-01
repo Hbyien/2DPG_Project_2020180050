@@ -1,4 +1,4 @@
-from pico2d import load_image, SDLK_SPACE, SDL_KEYDOWN, get_time,SDLK_RIGHT, SDL_KEYUP, SDLK_LEFT
+from pico2d import load_image, SDLK_SPACE, SDL_KEYDOWN, get_time,SDLK_d, SDL_KEYUP, SDLK_a, SDLK_f
 import math
 
 
@@ -7,16 +7,20 @@ def time_out(e):
     return e[0] == 'TIME_OUT'
 
 def right_down(e):
-    return e[0] == 'INPUT' and e[1].type == SDL_KEYDOWN and e[1].key == SDLK_RIGHT
+    return e[0] == 'INPUT' and e[1].type == SDL_KEYDOWN and e[1].key == SDLK_d
 
 def right_up(e):
-    return e[0] == 'INPUT' and e[1].type == SDL_KEYUP and e[1].key == SDLK_RIGHT
+    return e[0] == 'INPUT' and e[1].type == SDL_KEYUP and e[1].key == SDLK_d
 
 def left_down(e):
-    return e[0] == 'INPUT' and e[1].type == SDL_KEYDOWN and e[1].key == SDLK_LEFT
+    return e[0] == 'INPUT' and e[1].type == SDL_KEYDOWN and e[1].key == SDLK_a
 
 def left_up(e):
-    return e[0] == 'INPUT' and e[1].type == SDL_KEYUP and e[1].key == SDLK_LEFT
+    return e[0] == 'INPUT' and e[1].type == SDL_KEYUP and e[1].key == SDLK_a
+
+def hit_down(e):
+    return e[0] == 'INPUT' and e[1].type == SDL_KEYDOWN and e[1].key == SDLK_f
+
 
 
 
@@ -35,11 +39,41 @@ class Run:
     @staticmethod
     def do(man):
         man.frame = (man.frame + 1) % 8
-        man.x += man.dir * 5
+        man.x += man.dir * 10
 
     @staticmethod
     def draw(man):
-        man.Run_image[int(man.frame)].draw(man.x, man.y, 50, 50)
+        if man.dir <0:
+            man.Run_image[int(man.frame)].composite_draw(0, 'h', man.x, man.y, 50, 50)
+            man.isl = 1
+        else:
+            man.Run_image[int(man.frame)].draw(man.x, man.y, 50, 50)
+            man.isl = 0
+
+
+class Punch:
+    @staticmethod
+    def enter(man, e):
+        man.frame =0
+
+
+    @staticmethod
+    def exit(man, e):
+        pass
+
+    @staticmethod
+    def do(man):
+        man.frame = (man.frame + 1) % 13
+        man.x += man.dir * 10
+
+    @staticmethod
+    def draw(man):
+        if man.dir < 0:
+            man.Punch_image[int(man.frame)].composite_draw(0, 'h', man.x, man.y, 50, 50)
+            man.isl = 1
+        else:
+            man.Punch_image[int(man.frame)].draw(man.x, man.y, 50, 50)
+            man.isl = 0
 
 
 class Idle:
@@ -47,16 +81,16 @@ class Idle:
     def do(man):
         man.frame = (man.frame + 1) % 8
         print('Idle Do - 드르렁')
-        if get_time() - man.idle_start_time > 3:
-            man.state_machine.handle_event(('TIME_OUT', 0))
+        #if get_time() - man.idle_start_time > 3:
+         #   man.state_machine.handle_event(('TIME_OUT', 0))
         pass
 
     @staticmethod
     def enter(man, e):
-        if man.action == 0:
-            man.action = 2
-        elif man.action == 1:
-            man.action = 3
+        #if man.action == 0:
+         #   man.action = 2
+        #elif man.action == 1:
+         #   man.action = 3
         man.dir = 0
         man.frame = 0
         man.idle_start_time = get_time()
@@ -69,7 +103,10 @@ class Idle:
 
     @staticmethod
     def draw(man):
-        man.NoWeaponStand_image[int(man.frame)].draw(man.x, man.y, 30, 50)
+        if man.isl == 1:
+            man.NoWeaponStand_image[int(man.frame)].composite_draw(0, 'h', man.x, man.y, 30, 50)
+        else:
+            man.NoWeaponStand_image[int(man.frame)].draw(man.x, man.y, 30, 50)
 
 
 # self.image[int(self.frame)].draw(self.x, self.y, 50, 50)
@@ -83,6 +120,7 @@ class StateMachine:
         self.transitions = {  # 딕셔너리 사용 키로부터 벨류를 찾아낸다.
             Idle: {right_down: Run, left_down: Run, left_up: Run, right_up: Run},
             Run: {right_down: Idle, left_down: Idle, right_up: Idle, left_up: Idle}
+
         }
 
     def handle_event(self, e):
@@ -113,12 +151,15 @@ class Man:
         self.x, self.y = 0, 90
         self.frame = 0
         self.dir = 0
-        self.action=3
+        self.isl =0  #왼쪽을 보고 있는가
+        #self.action=3
         #self.animation_names = ['sManRun']
         self.name_sManNoWeaponStand = 'sManNoWeaponStand'
         self.name_sManRun = 'sManRun'
+        self.name_sManNoWeaponAttackPunch = 'sManNoWeaponAttackPunch'
         self.NoWeaponStand_image = [load_image("./sManNoWeaponStand/" + self.name_sManNoWeaponStand + "_%d" % i + ".png") for i in range(0, 16)]
         self.Run_image = [load_image("./sManRun/" + self.name_sManRun + "_%d" % i + ".png") for i in range(0, 8)]
+        self.Punch = [load_image("./sManNoWeaponAttackPunch/" + self.name_sManNoWeaponAttackPunch+ "_%d" %i + ".png")for i in range(0, 13)]
         self.state_machine = StateMachine(self)
         self.state_machine.start()
 
