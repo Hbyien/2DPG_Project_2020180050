@@ -1,7 +1,8 @@
-from pico2d import load_image, SDLK_SPACE, SDL_KEYDOWN, get_time,SDLK_d, SDL_KEYUP, SDLK_a, SDLK_f, get_time, SDLK_w, SDLK_s
+from pico2d import (load_image, SDLK_SPACE, SDL_KEYDOWN, get_time,SDLK_d, SDL_KEYUP, SDLK_a, SDLK_f, get_time, SDLK_w,
+                    SDLK_s,SDLK_e)
 import math
 import game_world
-
+from sword import Sword
 
 
 def right_down(e):
@@ -29,7 +30,13 @@ def sword_down(e):
     return e[0] == 'INPUT' and e[1].type == SDL_KEYDOWN and e[1].key == SDLK_s
 
 def sword_up(e):
-    return e[0] == 'INPUT' and e[1].type == SDL_KEYUP and e[1].key == SDLK_w
+    return e[0] == 'INPUT' and e[1].type == SDL_KEYDOWN and e[1].key == SDLK_w
+
+def throw_down(e):
+    return e[0] == 'INPUT' and e[1].type == SDL_KEYDOWN and e[1].key == SDLK_e
+
+def space_down(e):
+    return e[0] == 'INPUT' and e[1].type == SDL_KEYDOWN and e[1].key == SDLK_SPACE
 
 
 
@@ -38,20 +45,50 @@ class Run:
     def enter(man, e):
         if right_down(e):# or left_up(e): #오른쪽 런
             man.dir= 1
+            man.face_dir =1
         elif left_down(e):# or right_up(e): #왼쪽 런
             man.dir = -1
-
+            man.face_dir = -1
 
 
     @staticmethod
     def exit(man, e):
-
         pass
 
     @staticmethod
     def do(man):
         man.frame = (man.frame + 1) % 8
-        man.x += man.dir * 10
+        man.x += man.dir * 2
+
+
+    @staticmethod
+    def draw(man):
+        if man.dir <0:
+            man.Run_image[int(man.frame)].composite_draw(0, 'h', man.x, man.y, 50, 50)
+            man.isl = 1
+        else:
+            man.Run_image[int(man.frame)].draw(man.x, man.y, 50, 50)
+            man.isl = 0
+
+class Run2:
+    @staticmethod
+    def enter(man, e):
+        if right_down(e):# or left_up(e): #오른쪽 런
+            man.dir= 1
+            man.face_dir =1
+        elif left_down(e):# or right_up(e): #왼쪽 런
+            man.dir = -1
+            man.face_dir = -1
+
+
+    @staticmethod
+    def exit(man, e):
+        pass
+
+    @staticmethod
+    def do(man):
+        man.frame = (man.frame + 1) % 8
+        man.x += man.dir * 2
 
 
     @staticmethod
@@ -93,6 +130,33 @@ class Punch:
             man.Punch_image[int(man.frame)].draw(man.x, man.y, 50, 50)
             man.isl = 0
 
+class Kick:
+    @staticmethod
+    def enter(man, e):
+        man.frame =0
+        print('zlr')
+        man.wait_time = get_time()
+
+
+    @staticmethod
+    def exit(man, e):
+        pass
+
+    @staticmethod
+    def do(man):
+        man.frame = (man.frame + 1) % 13
+        if get_time() - man.wait_time > 0.15:
+            man.state_machine.handle_event(('TIME_OUT', 0))
+
+
+    @staticmethod
+    def draw(man):
+        if man.isl == 1:
+            man.Kick_image[int(man.frame)].composite_draw(0, 'h', man.x, man.y, 40, 50)
+            man.isl = 1
+        else:
+            man.Kick_image[int(man.frame)].draw(man.x, man.y, 40, 50)
+            man.isl = 0
 
 class NoWeaponStand:
     def do(man):
@@ -119,54 +183,153 @@ class SwordStand:
     def do(man):
         man.frame = (man.frame + 1) % 8
 
-        pass
+
 
     @staticmethod
     def enter(man, e):
         man.dir = 0
         man.frame = 0
+        man.wait_time = get_time()
 
-        print(man.swordwhere)
-
-
-        pass
 
     @staticmethod
     def exit(man, e):
         if sword_up(e):
-            print(man.swordwhere)
             man.swordwhere += 1
         elif sword_down(e):
-            print(man.swordwhere)
-            man.swordwhere   -= 1
+            man.swordwhere  -= 1
+
+        if throw_down(e):
+            man.throw_sword()
         pass
+
+    @staticmethod
+    def draw(man):
+
+        if man.swordwhere == 0:
+            if man.isl == 1:
+                man.ManSword_image[int(man.frame)].composite_draw(0, 'h', man.x, man.y, 40, 50)
+                man.Sword_image.composite_draw(0, 'h', man.x - 28, man.y + 10, 25, 8)
+
+            else:
+                man.ManSword_image[int(man.frame)].draw(man.x, man.y, 40, 50)
+                man.Sword_image.draw(man.x + 28, man.y + 10, 25, 8)
+            man.swordwhere = 0
+        elif man.swordwhere == 1:
+
+            if man.isl == 1:
+                man.ManSwordHi_image[int(man.frame)].composite_draw(0, 'h', man.x, man.y, 40, 50)
+                man.Sword_image.composite_draw(0, 'h', man.x - 28, man.y + 22, 25,8)
+            else:
+                man.ManSwordHi_image[int(man.frame)].draw(man.x, man.y, 40, 50)
+                man.Sword_image.draw(man.x + 28, man.y + 22, 25, 8)
+            man.swordwhere = 1
+        elif man.swordwhere >= 2:
+            if man.isl == 1:
+                man.SwordThrowStand_image.composite_draw(0, 'h', man.x, man.y, 30, 50)
+            else:
+                man.SwordThrowStand_image.draw(man.x, man.y, 30, 50)
+        else:
+            if man.isl == 1:
+                man.ManSwordLo_image[int(man.frame)].composite_draw(0, 'h', man.x, man.y, 40, 50)
+                man.Sword_image.composite_draw(0, 'h', man.x - 28, man.y -5, 25, 8)
+            else:
+                man.ManSwordLo_image[int(man.frame)].draw(man.x, man.y, 40, 50)
+                man.Sword_image.draw(man.x + 28, man.y -5, 25, 8)
+
+            man.swordwhere = -1
+
+class SwordAttck:
+    @staticmethod
+    def enter(man, e):
+        man.frame =0
+        man.wait_time = get_time()
+
+
+    @staticmethod
+    def exit(man, e):
+        pass
+
+    @staticmethod
+    def do(man):
+        man.frame = (man.frame + 1) % 15
+        if get_time() - man.wait_time > 0.15:
+            man.state_machine.handle_event(('TIME_OUT', 0))
+
 
     @staticmethod
     def draw(man):
         if man.swordwhere == 0:
             if man.isl == 1:
-                man.ManSword_image[int(man.frame)].composite_draw(0, 'h', man.x, man.y, 40, 50)
+                man.ManSwordAttackMed_image[int(man.frame)].composite_draw(0, 'h', man.x, man.y, 50, 50)
+                man.Sword_image.composite_draw(0, 'h', man.x - 28, man.y + 10, 25, 8)
+                man.Sword_image.composite_draw(0, 'h', man.x - 48, man.y + 10, 25, 8)
+                man.Sword_image.composite_draw(0, 'h', man.x - 28, man.y + 10, 25, 8)
             else:
-                man.ManSword_image[int(man.frame)].draw(man.x, man.y, 40, 50)
+                man.ManSwordAttackMed_image[int(man.frame)].draw(man.x, man.y, 50, 50)
+                man.Sword_image.draw(man.x + 28, man.y + 10, 25, 8)
+                man.Sword_image.draw(man.x + 48, man.y + 10, 25, 8)
+                man.Sword_image.draw(man.x + 28, man.y + 10, 25, 8)
             man.swordwhere = 0
         elif man.swordwhere >= 1:
-            print('위')
-            print(man.swordwhere)
             if man.isl == 1:
-                man.ManSwordHi_image[int(man.frame)].composite_draw(0, 'h', man.x, man.y, 40, 50)
+                man.ManSwordAttackHi_image[int(man.frame)].composite_draw(0, 'h', man.x, man.y, 50, 50)
+                man.Sword_image.composite_draw(0, 'h', man.x - 28, man.y + 22, 25, 8)
+                man.Sword_image.composite_draw(0, 'h', man.x - 48, man.y + 22, 25, 8)
+                man.Sword_image.composite_draw(0, 'h', man.x - 28, man.y + 22, 25, 8)
+
             else:
-                man.ManSwordHi_image[int(man.frame)].draw(man.x, man.y, 40, 50)
+                man.ManSwordAttackHi_image[int(man.frame)].draw(man.x, man.y, 50, 50)
+                man.Sword_image.draw(man.x + 28, man.y + 22, 25, 8)
+                man.Sword_image.draw(man.x + 48, man.y + 22, 25, 8)
+                man.Sword_image.draw(man.x + 28, man.y + 22, 25, 8)
+
             man.swordwhere = 1
         else:
             if man.isl == 1:
-                man.ManSwordLo_image[int(man.frame)].composite_draw(0, 'h', man.x, man.y, 40, 50)
+                man.ManSwordAttackLo_image[int(man.frame)].composite_draw(0, 'h', man.x, man.y, 50, 50)
+                man.Sword_image.composite_draw(0, 'h', man.x - 28, man.y - 5, 25, 8)
+                man.Sword_image.composite_draw(0, 'h', man.x - 48, man.y - 5, 25, 8)
+                man.Sword_image.composite_draw(0, 'h', man.x - 28, man.y - 5, 25, 8)
             else:
-                man.ManSwordLo_image[int(man.frame)].draw(man.x, man.y, 40, 50)
+                man.ManSwordAttackLo_image[int(man.frame)].draw(man.x, man.y, 50, 50)
+                man.Sword_image.draw(man.x + 28, man.y - 5, 25, 8)
+                man.Sword_image.draw(man.x + 48, man.y - 5, 25, 8)
+                man.Sword_image.draw(man.x + 28, man.y - 5, 25, 8)
 
             man.swordwhere = -1
-
-
 # self.image[int(self.frame)].draw(self.x, self.y, 50, 50)
+
+
+
+
+class Throw:
+    @staticmethod
+    def enter(man, e):
+        man.frame =0
+        man.wait_time = get_time()
+
+
+    @staticmethod
+    def exit(man, e):
+        pass
+
+    @staticmethod
+    def do(man):
+        man.frame = (man.frame + 1) % 13
+        if get_time() - man.wait_time > 0.2:
+            man.state_machine.handle_event(('TIME_OUT', 0))
+
+
+    @staticmethod
+    def draw(man):
+        if man.isl == 1:
+            man.Throw_image[int(man.frame)].composite_draw(0, 'h', man.x, man.y, 30, 50)
+
+            man.isl = 1
+        else:
+            man.Throw_image[int(man.frame)].draw(man.x, man.y, 30, 50)
+            man.isl = 0
 
 
 class StateMachine:
@@ -175,10 +338,16 @@ class StateMachine:
         self.cur_state =  SwordStand #클래스는 객체생성이 아니고 함수를 모아두는 용도가 있기 때문에 Idle이란 그룹을 가리키는 것이다.
         self.man = man
         self.transitions = {  # 딕셔너리 사용 키로부터 벨류를 찾아낸다.
-            NoWeaponStand: {right_down: Run, left_down: Run,  hit_down: Punch}, #left_up: Run, right_up: Run,
-            Run: {right_up:  SwordStand, left_up:  SwordStand, hit_down: Punch,hit_up: SwordStand}, #right_down:  SwordStand, left_down:  SwordStand
-            Punch : {time_out:  SwordStand},
-            SwordStand: {right_down: Run, left_down: Run,  hit_down: Punch, sword_up: SwordStand, sword_down: SwordStand}, #left_up: Run, right_up: Run,
+            NoWeaponStand: {right_down: Run2, left_down: Run2,  hit_down: Punch, throw_down: Kick}, #left_up: Run, right_up: Run,
+            Run: {right_up:  SwordStand, left_up:  SwordStand, hit_down: SwordAttck,hit_up: SwordStand},
+            Run2: {right_up: NoWeaponStand, left_up: NoWeaponStand, hit_down: Punch, hit_up: NoWeaponStand, throw_down: Kick},
+            Punch : {time_out:  NoWeaponStand},
+            SwordStand: {right_down: Run, left_down: Run,  hit_down: SwordAttck, sword_up: SwordStand, sword_down: SwordStand,
+                         throw_down: Throw}, #left_up: Run, right_up: Run,
+            SwordAttck: {time_out: SwordStand},
+            Throw: {time_out: NoWeaponStand},
+            Kick : {time_out:  NoWeaponStand}
+
 
         }
 
@@ -208,6 +377,7 @@ class Man:
         self.dir = 0
         self.swordwhere = 0 #검 위치
         self.isl =0  #왼쪽을 보고 있는가
+        self.face_dir = 1
 
 
         self.name_sManNoWeaponStand = 'sManNoWeaponStand'
@@ -216,6 +386,11 @@ class Man:
         self.name_sManSwordStandMed = 'sManSwordStandMed'
         self.name_sManSwordStandLo = 'sManSwordStandLo'
         self.name_sManSwordStandHi = 'sManSwordStandHi'
+        self.name_sManSwordAttackMed = 'sManSwordAttackMed'
+        self.name_sManSwordAttackHi = 'sManSwordAttackHi'
+        self.name_sManSwordAttackLo = 'sManSwordAttackLo'
+        self.name_sManThrowStanding = 'sManThrowStanding'
+        self.name_sManHiKick = 'sManHiKick'
 
         self.NoWeaponStand_image = [load_image("./sManNoWeaponStand/" + self.name_sManNoWeaponStand + "_%d" % i + ".png") for i in range(0, 16)]
         self.Run_image = [load_image("./sManRun/" + self.name_sManRun + "_%d" % i + ".png") for i in range(0, 8)]
@@ -223,6 +398,16 @@ class Man:
         self.ManSword_image = [load_image("./sManSwordStandMed/"+ self.name_sManSwordStandMed + "_%d" %i + ".png")for i in range(0, 12)]
         self.ManSwordLo_image = [load_image("./sManSwordStandLo/" + self.name_sManSwordStandLo + "_%d" % i + ".png") for i in range(0, 12)]
         self.ManSwordHi_image = [load_image("./sManSwordStandHi/" + self.name_sManSwordStandHi + "_%d" % i + ".png") for i in range(0, 10)]
+        self.ManSwordAttackMed_image = [load_image("./sManSwordAttackMed/" + self.name_sManSwordAttackMed + "_%d" % i + ".png") for i in range(0, 15)]
+        self.ManSwordAttackHi_image = [load_image("./sManSwordAttackHi/" + self.name_sManSwordAttackHi + "_%d" % i + ".png") for i in range(0, 15)]
+        self.ManSwordAttackLo_image = [load_image("./sManSwordAttackLo/" + self.name_sManSwordAttackLo + "_%d" % i + ".png") for i in range(0, 15)]
+        self.Throw_image = [load_image("./sManThrowStanding/" +  self.name_sManThrowStanding + "_%d" % i + ".png") for i in range(0, 13)]
+        self.Kick_image = [load_image("./sManHiKick/" + self.name_sManHiKick+ "_%d" % i + ".png") for i in range(0, 13)]
+
+        self.Sword_image = load_image('sSword.png')
+        self.SwordThrowStand_image = load_image('sManThrowStand.png')
+
+
 
         self.state_machine = StateMachine(self)
         self.state_machine.start()
@@ -238,3 +423,14 @@ class Man:
     def draw(self):
         #self.image[int(self.frame)].draw(self.x, self.y, 50, 50)
         self.state_machine.draw()
+
+    def throw_sword(self):
+        sword = Sword(self.x, self.y, self.face_dir * 10)
+        game_world.add_object(sword)
+
+        if self.face_dir == -1:
+            print('FIRE BALL LEFT')
+        elif self.face_dir == 1:
+            print('FIRE BALL RIGHT')
+
+

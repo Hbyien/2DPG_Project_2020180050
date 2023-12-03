@@ -3,6 +3,7 @@ from pico2d import *
 from man import Man
 from background import Background
 
+import game_world
 
 def handle_events():
     global running
@@ -24,35 +25,33 @@ def reset_world():
     global man
 
     running = True
-    world = []
 
     background = Background()
-    world.append(background)
-
+    game_world.add_object(background, 0)
     man = Man()
-    world.append(man)
+    game_world.add_object(man, 1)
 
 
 def update_world():
-    for o in world:
-        o.update()
+    game_world.update()
+
     pass
+
 
 def render_world():
     clear_canvas()
-    for o in world:
-        o.draw()
+    game_world.render()
     update_canvas()
 
 
 open_canvas()
 reset_world()
-
-
+# game loop
 while running:
     handle_events()
     update_world()
     render_world()
-    delay(0.05)
-
+    delay(0.01)
+# finalization code
 close_canvas()
+
