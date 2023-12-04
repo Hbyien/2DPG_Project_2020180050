@@ -3,6 +3,7 @@ from pico2d import (load_image, SDLK_SPACE, SDL_KEYDOWN, get_time,SDLK_d, SDL_KE
 import math
 import game_world
 from sword import Sword
+import game_framework
 
 
 def right_down(e):
@@ -39,6 +40,17 @@ def space_down(e):
     return e[0] == 'INPUT' and e[1].type == SDL_KEYDOWN and e[1].key == SDLK_SPACE
 
 
+PIXEL_PER_METER = (10.0 / 0.3) # 10 pixel 30 cm
+RUN_SPEED_KMPH = 20.0 # Km / Hour
+RUN_SPEED_MPM = (RUN_SPEED_KMPH * 1000.0 / 60.0)
+RUN_SPEED_MPS = (RUN_SPEED_MPM / 60.0)
+RUN_SPEED_PPS = (RUN_SPEED_MPS * PIXEL_PER_METER)
+# Boy Action Speed
+# fill here
+TIME_PER_ACTION = 0.5
+ACTION_PER_TIME = 1.0 / TIME_PER_ACTION
+FRAMES_PER_ACTION = 8
+FRAMES_PER_TIME = FRAMES_PER_ACTION * ACTION_PER_TIME #액션 프레임 증가 속도
 
 class Run:
     @staticmethod
@@ -57,8 +69,9 @@ class Run:
 
     @staticmethod
     def do(man):
-        man.frame = (man.frame + 1) % 8
-        man.x += man.dir * 2
+        man.frame = (man.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % 8
+        man.x += man.dir * RUN_SPEED_PPS * game_framework.frame_time
+
 
 
     @staticmethod
@@ -87,8 +100,8 @@ class Run2:
 
     @staticmethod
     def do(man):
-        man.frame = (man.frame + 1) % 8
-        man.x += man.dir * 2
+        man.frame = (man.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % 8
+        man.x += man.dir * RUN_SPEED_PPS * game_framework.frame_time
 
 
     @staticmethod
@@ -116,18 +129,18 @@ class Punch:
 
     @staticmethod
     def do(man):
-        man.frame = (man.frame + 1) % 13
-        if get_time() - man.wait_time > 0.15:
+        man.frame = (man.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % 13
+        if get_time() - man.wait_time > 0.3:
             man.state_machine.handle_event(('TIME_OUT', 0))
 
 
     @staticmethod
     def draw(man):
         if man.isl == 1:
-            man.Punch_image[int(man.frame)].composite_draw(0, 'h', man.x, man.y, 50, 50)
+            man.Punch_image[int(man.frame)].composite_draw(0, 'h', man.x, man.y, 40, 50)
             man.isl = 1
         else:
-            man.Punch_image[int(man.frame)].draw(man.x, man.y, 50, 50)
+            man.Punch_image[int(man.frame)].draw(man.x, man.y, 40, 50)
             man.isl = 0
 
 class Kick:
@@ -144,23 +157,23 @@ class Kick:
 
     @staticmethod
     def do(man):
-        man.frame = (man.frame + 1) % 13
-        if get_time() - man.wait_time > 0.15:
+        man.frame = (man.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % 13
+        if get_time() - man.wait_time > 0.3:
             man.state_machine.handle_event(('TIME_OUT', 0))
 
 
     @staticmethod
     def draw(man):
         if man.isl == 1:
-            man.Kick_image[int(man.frame)].composite_draw(0, 'h', man.x, man.y, 40, 50)
+            man.Kick_image[int(man.frame)].composite_draw(0, 'h', man.x, man.y, 30, 50)
             man.isl = 1
         else:
-            man.Kick_image[int(man.frame)].draw(man.x, man.y, 40, 50)
+            man.Kick_image[int(man.frame)].draw(man.x, man.y, 30, 50)
             man.isl = 0
 
 class NoWeaponStand:
     def do(man):
-        man.frame = (man.frame + 1) % 12
+        man.frame = (man.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % 12
 
     def enter(man, e):
         man.dir = 0
@@ -181,7 +194,7 @@ class NoWeaponStand:
 class SwordStand:
     @staticmethod  # do(self) 이렇게 쓰지 않아도 됨  / 필요한 함수만 모아놨다 / 객체 생성용이 아니라 함수를 모아두는 용도로 변경
     def do(man):
-        man.frame = (man.frame + 1) % 8
+        man.frame = (man.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % 8
 
 
 
@@ -252,7 +265,7 @@ class SwordAttck:
 
     @staticmethod
     def do(man):
-        man.frame = (man.frame + 1) % 15
+        man.frame = (man.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % 15
         if get_time() - man.wait_time > 0.15:
             man.state_machine.handle_event(('TIME_OUT', 0))
 
@@ -316,7 +329,7 @@ class Throw:
 
     @staticmethod
     def do(man):
-        man.frame = (man.frame + 1) % 13
+        man.frame = (man.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % 13
         if get_time() - man.wait_time > 0.2:
             man.state_machine.handle_event(('TIME_OUT', 0))
 
@@ -425,7 +438,7 @@ class Man:
         self.state_machine.draw()
 
     def throw_sword(self):
-        sword = Sword(self.x, self.y, self.face_dir * 10)
+        sword = Sword(self.x, self.y, self.face_dir * 2)
         game_world.add_object(sword)
 
         if self.face_dir == -1:

@@ -27,5 +27,5 @@ class Sword:
 
 
     def throw_sword(self):
-        sword = Sword(self.x, self.y, self.face_dir * 10)
+        sword = Sword(self.x, self.y, self.face_dir * 2)
         game_world.add_object(sword, 1)
