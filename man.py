@@ -1,9 +1,10 @@
 from pico2d import (load_image, SDLK_SPACE, SDL_KEYDOWN, get_time,SDLK_d, SDL_KEYUP, SDLK_a, SDLK_f, get_time, SDLK_w,
-                    SDLK_s,SDLK_e)
+                    SDLK_s,SDLK_e,draw_rectangle)
 import math
 import game_world
 from sword import Sword
 import game_framework
+
 
 
 def right_down(e):
@@ -65,6 +66,7 @@ class Run:
 
     @staticmethod
     def exit(man, e):
+
         pass
 
     @staticmethod
@@ -195,14 +197,23 @@ class SwordStand:
     @staticmethod  # do(self) 이렇게 쓰지 않아도 됨  / 필요한 함수만 모아놨다 / 객체 생성용이 아니라 함수를 모아두는 용도로 변경
     def do(man):
         man.frame = (man.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % 8
+        man.with_sword()
 
 
+    def get_bb(man):
+        return man.x , man.y, man.x + 30, man.y + 25
 
     @staticmethod
     def enter(man, e):
         man.dir = 0
         man.frame = 0
         man.wait_time = get_time()
+        print("인")
+        man.isstand = 1
+
+
+
+
 
 
     @staticmethod
@@ -213,12 +224,15 @@ class SwordStand:
             man.swordwhere  -= 1
 
         if throw_down(e):
+            man.isstand = 0
             man.throw_sword()
+
+
         pass
 
     @staticmethod
     def draw(man):
-
+        draw_rectangle(*man.get_bb())
         if man.swordwhere == 0:
             if man.isl == 1:
                 man.ManSword_image[int(man.frame)].composite_draw(0, 'h', man.x, man.y, 40, 50)
@@ -257,6 +271,7 @@ class SwordAttck:
     def enter(man, e):
         man.frame =0
         man.wait_time = get_time()
+        man.issword = 1
 
 
     @staticmethod
@@ -321,6 +336,7 @@ class Throw:
     def enter(man, e):
         man.frame =0
         man.wait_time = get_time()
+        man.issword =0
 
 
     @staticmethod
@@ -391,6 +407,10 @@ class Man:
         self.swordwhere = 0 #검 위치
         self.isl =0  #왼쪽을 보고 있는가
         self.face_dir = 1
+        self.issword = 1
+        self.ispattack = 0
+        self.sw = 1
+        self.isstand = 0
 
 
         self.name_sManNoWeaponStand = 'sManNoWeaponStand'
@@ -436,9 +456,11 @@ class Man:
     def draw(self):
         #self.image[int(self.frame)].draw(self.x, self.y, 50, 50)
         self.state_machine.draw()
+        draw_rectangle(*self.get_bb())
+        draw_rectangle(*self.get_sb())
 
     def throw_sword(self):
-        sword = Sword(self.x, self.y, self.face_dir * 2)
+        sword = Sword(self.x, self.y, self.face_dir * 2,self.isstand,self.swordwhere)
         game_world.add_object(sword)
 
         if self.face_dir == -1:
@@ -446,4 +468,32 @@ class Man:
         elif self.face_dir == 1:
             print('FIRE BALL RIGHT')
 
+    def with_sword(self):
 
+        sword = Sword(self.x, self.y,0,self.isstand,self.swordwhere)
+        game_world.add_object(sword)
+
+
+
+    def get_bb(self):
+        return self.x - 10, self.y - 25, self.x + 10, self.y + 25
+
+    def get_sb(self):
+        if self.issword == 1:
+            if self.face_dir ==1:
+                if self.swordwhere == 0:
+                    return self.x+15 , self.y+6, self.x + 40, self.y + 16
+                elif self.swordwhere == 1:
+                    return self.x + 15, self.y + 16, self.x + 40, self.y + 26
+                else:
+                    return self.x + 15, self.y-10 , self.x + 40, self.y
+            else:
+                if self.swordwhere == 0:
+                    return self.x -40, self.y + 6, self.x -15, self.y + 16
+                elif self.swordwhere == 1:
+                    return self.x -40, self.y + 16, self.x -15, self.y + 26
+                else:
+                    return self.x - 40, self.y - 10, self.x - 15, self.y
+        else:
+            if self.face_dir == 1:
+                return self.x , self.y, self.x , self.y
